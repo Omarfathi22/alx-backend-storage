@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-""" Module for an expiring web cache using Redis. """
+#!/usr/bin/env python3 
+"""Module for an expiring web cache using Redis."""
 
 import redis
 import requests
@@ -15,12 +15,11 @@ def wrap_requests(fn: Callable) -> Callable:
     @wraps(fn)
     def wrapper(url: str) -> str:
         """
-        Wrapper function that handles caching logic.
+        Handles caching logic for requests.
 
-        Increments the request count for the URL in Redis, checks
-        if a cached response exists, and returns it if available.
-        If not cached, it makes the actual request, caches the response,
-        and sets an expiration time.
+        Increments the request count in Redis, checks for a cached response,
+        and returns it if available. If not cached, it makes the request,
+        caches the response, and sets an expiration time.
 
         :param url: The URL to request.
         :return: The response text from the cached or fetched request.
@@ -46,7 +45,7 @@ def wrap_requests(fn: Callable) -> Callable:
 def get_page(url: str) -> str:
     """Fetch the content of a webpage.
 
-    Makes an HTTP GET request to the provided URL and returns the page content.
+    Makes an HTTP GET request to the specified URL and returns the content.
     
     :param url: The URL of the page to retrieve.
     :return: The HTML content of the page.

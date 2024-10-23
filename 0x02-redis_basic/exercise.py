@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Redis module
+Redis module for caching data.
 """
 import sys
 from functools import wraps
@@ -14,15 +14,15 @@ UnionOfTypes = Union[str, bytes, int, float]
 
 def count_calls(method: Callable) -> Callable:
     """
-    Decorator to count how many times methods of the Cache class are called.
+    Decorator to count how many times a method is called.
     :param method: The method to decorate.
-    :return: The decorated method.
+    :return: The wrapped method.
     """
     key = method.__qualname__
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """Wraps the method."""
+        """Increments call count in Redis."""
         self._redis.incr(key)
         return method(self, *args, **kwargs)
 
@@ -31,9 +31,9 @@ def count_calls(method: Callable) -> Callable:
 
 def call_history(method: Callable) -> Callable:
     """
-    Decorator to store input parameters and outputs in Redis.
+    Decorator to log input and output in Redis.
     :param method: The method to decorate.
-    :return: The decorated method.
+    :return: The wrapped method.
     """
     key = method.__qualname__
     input_key = f"{key}:inputs"
@@ -41,7 +41,7 @@ def call_history(method: Callable) -> Callable:
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """Wraps the method."""
+        """Stores inputs and outputs in Redis."""
         self._redis.rpush(input_key, str(args))
         res = method(self, *args, **kwargs)
         self._redis.rpush(output_key, str(res))
@@ -52,12 +52,12 @@ def call_history(method: Callable) -> Callable:
 
 class Cache:
     """
-    Cache redis class
+    Cache class to interface with Redis.
     """
 
     def __init__(self):
         """
-        Initializes the Cache instance and flushes the Redis database.
+        Initializes the cache and clears the Redis database.
         """
         self._redis = redis.Redis()
         self._redis.flushdb()
@@ -66,9 +66,7 @@ class Cache:
     @call_history
     def store(self, data: UnionOfTypes) -> str:
         """
-        Generates a random key (e.g. using uuid),
-        stores the input data in Redis using the
-        random key and returns the key.
+        Stores data in Redis with a unique key.
         :param data: The data to store.
         :return: The generated key.
         """
@@ -78,10 +76,10 @@ class Cache:
 
     def get(self, key: str, fn: Optional[Callable] = None) -> UnionOfTypes:
         """
-        Converts the data back to the desired format.
+        Retrieves data from Redis and optionally converts it.
         :param key: The key for the data.
-        :param fn: Optional function to convert data.
-        :return: The converted data.
+        :param fn: Optional conversion function.
+        :return: The retrieved (and possibly converted) data.
         """
         if fn:
             return fn(self._redis.get(key))
@@ -90,9 +88,9 @@ class Cache:
 
     def replay(self, method: Callable):
         """
-        Displays the history of calls for a given method.
+        Shows the history of calls for a specific method.
         :param method: The method to replay.
         """
         key = method.__qualname__
         inputs = self._redis.lrange(f"{key}:inputs", 0, -1)
- 
+        
